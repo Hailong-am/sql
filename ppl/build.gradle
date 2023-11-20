@@ -28,6 +28,7 @@ plugins {
     id 'jacoco'
     id 'antlr'
     id 'com.diffplug.spotless' version '6.19.0'
+    id 'maven-publish'
 }
 
 generateGrammarSource {
@@ -116,3 +117,39 @@ jacocoTestCoverageVerification {
     }
 }
 check.dependsOn jacocoTestCoverageVerification
+
+publishing {
+    publications {
+        mavenJava(MavenPublication) {
+            artifactId = 'ppl'
+            from components.java
+            pom {
+                name = 'ppl'
+                description = 'OpenSearch PPL'
+                groupId = "org.opensearch.plugin"
+                licenses {
+                    license {
+                        name = 'The Apache License, Version 2.0'
+                        url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+                    }
+                }
+                developers {
+                    developer {
+                        name = 'OpenSearch'
+                        url = 'https://github.com/opensearch-project/sql'
+                    }
+                }
+            }
+        }
+    }
+    repositories {
+        maven {
+            name = "Snapshots" //  optional target repository name
+            url = "https://aws.oss.sonatype.org/content/repositories/snapshots"
+            credentials {
+                username "$System.env.SONATYPE_USERNAME"
+                password "$System.env.SONATYPE_PASSWORD"
+            }
+        }
+    }
+}
