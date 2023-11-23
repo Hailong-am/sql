@@ -45,8 +45,8 @@ configurations.all {
 
 jacocoTestReport {
     reports {
-        html.enabled true
-        xml.enabled true
+        html.required.set(false)
+        xml.required.set(false)
     }
     afterEvaluate {
         classDirectories.setFrom(files(classDirectories.files.collect {

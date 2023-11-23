@@ -28,6 +28,7 @@ plugins {
     id 'jacoco'
     id 'opensearch.opensearchplugin'
     id 'com.diffplug.spotless' version '6.19.0'
+    id 'com.github.johnrengelman.shadow'
 }
 
 apply plugin: 'opensearch.pluginzip'
@@ -52,6 +53,20 @@ opensearchplugin {
     noticeFile rootProject.file("NOTICE")
 }
 
+shadowJar {
+    archiveClassifier.set('all')
+    dependencies {
+        exclude(project(':prometheus'))
+        exclude(project(':benchmarks'))
+        exclude(project(':spark'))
+        // add one exclude
+    }
+    // if have jar hell we could relocate
+    // relocate 'junit.framework', 'shadow.junit'
+}
+
+
+
 publishing {
     publications {
         pluginZip(MavenPublication) { publication ->
@@ -73,6 +88,35 @@ publishing {
                 }
             }
         }
+
+        shadow(MavenPublication) { publication ->
+//            project.shadow.component(publication)
+            from components.java
+
+            pom {
+                name = "OpenSearch ppl"
+                packaging = "jar"
+                url = "https://github.com/opensearch-project/sql"
+                description = "OpenSearch sql"
+                scm {
+                    connection = "scm:git@github.com:opensearch-project/sql.git"
+                    developerConnection = "scm:git@github.com:opensearch-project/sql.git"
+                    url = "git@github.com:opensearch-project/sql.git"
+                }
+                licenses {
+                    license {
+                        name = "The Apache License, Version 2.0"
+                        url = "http://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+                developers {
+                    developer {
+                        name = "OpenSearch"
+                        url = "https://github.com/opensearch-project/sql"
+                    }
+                }
+            }
+        }
     }
     repositories {
         maven {
@@ -85,6 +129,8 @@ publishing {
         }
     }
 }
+
+publishShadowPublicationToMavenLocal.dependsOn shadowJar
 
 javadoc.enabled = false
 loggerUsageCheck.enabled = false
@@ -203,7 +249,7 @@ testingConventions.enabled = false
 thirdPartyAudit.enabled = false
 
 
-apply plugin: 'nebula.ospackage'
+apply plugin: 'com.netflix.nebula.ospackage'
 validateNebulaPom.enabled = false
 
 // This is afterEvaluate because the bundlePlugin ZIP task is updated afterEvaluate and changes the ZIP name to match the plugin name
@@ -214,7 +260,7 @@ afterEvaluate {
         version = "${project.version}" - "-SNAPSHOT"
 
         into '/usr/share/opensearch/plugins'
-        from(zipTree(bundlePlugin.archivePath)) {
+        from(zipTree(bundlePlugin.archiveFile)) {
             into opensearchplugin.name
         }
 
@@ -245,9 +291,8 @@ afterEvaluate {
         task renameRpm(type: Copy) {
             from("$buildDir/distributions")
             into("$buildDir/distributions")
-            include archiveName
-            rename archiveName, "${packageName}-${version}.rpm"
-            doLast { delete file("$buildDir/distributions/$archiveName") }
+            rename "$archiveFileName", "${packageName}-${version}.rpm"
+            doLast { delete file("$buildDir/distributions/$archiveFileName") }
         }
     }
 
@@ -258,9 +303,8 @@ afterEvaluate {
         task renameDeb(type: Copy) {
             from("$buildDir/distributions")
             into("$buildDir/distributions")
-            include archiveName
-            rename archiveName, "${packageName}-${version}.deb"
-            doLast { delete file("$buildDir/distributions/$archiveName") }
+            rename "$archiveFileName", "${packageName}-${version}.rpm"
+            doLast { delete file("$buildDir/distributions/$archiveFileName") }
         }
     }
 }
